@@ -6,7 +6,10 @@ import router from './router'
 import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
-import _ from "lodash"
+import _ from "lodash" 
+import 'vue-simple-context-menu/dist/vue-simple-context-menu.css'
+import VueSimpleContextMenu from 'vue-simple-context-menu'
+Vue.component('vue-simple-context-menu', VueSimpleContextMenu)
 
 Vue.prototype._ = _
 Vue.config.productionTip = false

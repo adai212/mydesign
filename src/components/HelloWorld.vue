@@ -12,7 +12,7 @@
             <b-col sm="3">
               <label :for="`name`">name:</label>
             </b-col>
-            <b-col sm="9">
+            <b-col sm="8">
               <b-form-input :id="`name`" :type="`text`" v-model="newItem.name"></b-form-input>
             </b-col>
           </b-row>
@@ -20,38 +20,63 @@
             <b-col sm="3">
               <label :for="`width`">width:</label>
             </b-col>
-            <b-col sm="9">
+            <b-col sm="8">
               <b-form-input :id="`width`" :type="`text`" v-model="newItem.width"></b-form-input>
             </b-col>
+            <b-col sm="1">mm</b-col>
           </b-row>
           <b-row class="my-1">
             <b-col sm="3">
               <label :for="`height`">height:</label>
             </b-col>
-            <b-col sm="9">
+            <b-col sm="8">
               <b-form-input :id="`height`" :type="`text`" v-model="newItem.height"></b-form-input>
             </b-col>
+            <b-col sm="1">mm</b-col>
           </b-row>
         </b-container>
       </b-modal>
     </div>
-    <div v-for="item in items" :key="item.num">
-      <div
-        class="design-item"
-        v-bind:style="{ width: item.width + 'px', height: item.height + 'px', left: item.left + 'px', top: item.top + 'px', lineHeight: item.height + 'px' }"
-        v-draggable
-      >{{item.name}}</div>
+    <div>
+      <div v-for="item in items" :key="item.num">
+        <div
+          class="design-item"
+          :title="item.width + '*' + item.height"
+          v-bind:style="{ width: _.round(item.width * scale) + 'px', height: _.round(item.height * scale) + 'px', left: item.left + 'px', top: item.top + 'px' }"
+          v-draggable="draggableValue"
+          @contextmenu.prevent.stop="handleClick($event, item)"
+        >
+          {{item.name}}
+          <br />
+          {{item.width + '*' + item.height}}
+        </div>
+      </div>
+    </div>
+    <vue-simple-context-menu
+      :elementId="'myUniqueId'"
+      :options="options"
+      :ref="'vueSimpleContextMenu'"
+      @option-clicked="optionClicked"
+    />
+    <div class="design-data">
+      <div v-for="item in items" :key="item.num">{{item}}</div>
     </div>
   </div>
 </template>
 
 <script>
 import { Draggable } from "draggable-vue-directive";
+import $ from "jquery";
+
+var appData = require('../data.json')
 
 export default {
   name: "myDesign",
   data() {
     return {
+      editFlag: false,
+      editIndex: 0,
+      scale: 0.0706,
       newItem: {
         name: "",
         width: "",
@@ -59,19 +84,19 @@ export default {
         top: "",
         left: ""
       },
-      items: [
-        {
-          name: "test",
-          width: "100",
-          height: "100",
-          top: "100",
-          left: "100"
-        }
+      items: appData,
+      draggableValue: {
+        onPositionChange: this.onPositionChange
+      },
+      options: [
+        { name: "edit", slug: "edit" },
+        { name: "delete", slug: "delete" }
       ]
     };
   },
   methods: {
     createItem() {
+      this.editFlag = false;
       this.newItem = {
         name: "",
         width: "",
@@ -81,11 +106,50 @@ export default {
       };
     },
     confirmModal() {
-      let newItem = this._.clone(this.newItem);
-      this.items.push(newItem);
+      if (this.editFlag) {
+        let editItem = this.items[this.editIndex];
+        for (let key in editItem) {
+          editItem[key] = this.newItem[key];
+        }
+      } else {
+        let newItem = this._.clone(this.newItem);
+        this.items.push(newItem);
+      }
     },
     exportItems() {
       console.log(JSON.stringify(this.items));
+    },
+    onPositionChange: function(positionDiff, absolutePosition, event) {
+      if (absolutePosition) {
+        this.items[
+          $(event.target)
+            .parent()
+            .index()
+        ].top = absolutePosition.top;
+        this.items[
+          $(event.target)
+            .parent()
+            .index()
+        ].left = absolutePosition.left;
+      }
+    },
+    handleClick(event, item) {
+      this.editIndex = $(event.target)
+        .parent()
+        .index();
+      this.$refs.vueSimpleContextMenu.showMenu(event, item);
+    },
+    optionClicked(event) {
+      switch (event.option.name) {
+        case "edit":
+          this.editFlag = true;
+          this.newItem = this._.clone(this.items[this.editIndex]);
+          this.$bvModal.show("new-item");
+          break;
+        case "delete":
+          this.items.splice(this.editIndex, 1);
+          break;
+      }
     }
   },
   directives: {
@@ -96,12 +160,12 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-.design-bg{
-  background-image: url('../assets/logo.png');
+.design-bg {
+  background-image: url("../assets/mydesign.png");
   background-repeat: no-repeat;
-  width: 200px;
-  height: 200px;
-  transform: scale(2);
+  width: 900px;
+  height: 900px;
+  transform: scale(1);
   transform-origin: 0 0;
 }
 .design-btn {
@@ -113,5 +177,13 @@ export default {
   display: inline-block;
   position: absolute;
   background-color: #f0f0f0;
+  font-size: 12px;
+}
+.design-data {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 400px;
+  font-size: 14px;
 }
 </style>
