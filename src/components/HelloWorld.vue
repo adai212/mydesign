@@ -58,8 +58,26 @@
       :ref="'vueSimpleContextMenu'"
       @option-clicked="optionClicked"
     />
-    <div class="design-data">
+    <!-- <div class="design-data">
       <div v-for="item in items" :key="item.num">{{item}}</div>
+    </div>-->
+    <div class="design-product">
+      <b-table striped hover :items="displayed" :fields="fields">
+        <template v-slot:cell()="data">
+          <b-form-input
+            type="text"
+            v-model="data.value"
+            :value="data.value"
+            @input="changeDisplay(data)"
+          ></b-form-input>
+        </template>
+        <template v-slot:cell(operate)="data">
+          <b-button variant="danger" @click="deleteDisplay(data)">delete</b-button>
+        </template>
+      </b-table>
+      <b-alert show>合计: {{displayedSum}}</b-alert>
+      <b-button variant="primary" @click="addDisplay()">add</b-button>
+      <b-button variant="primary" @click="exportDisplay()">export</b-button>
     </div>
   </div>
 </template>
@@ -68,7 +86,8 @@
 import { Draggable } from "draggable-vue-directive";
 import $ from "jquery";
 
-var appData = require('../data.json')
+var appData = require("../data.json");
+var displayedData = require("../displayed.json")
 
 export default {
   name: "myDesign",
@@ -91,8 +110,20 @@ export default {
       options: [
         { name: "edit", slug: "edit" },
         { name: "delete", slug: "delete" }
-      ]
+      ],
+      fields: ["product", "price", "operate"],
+      displayed: displayedData
     };
+  },
+  computed: {
+    displayedSum: function() {
+      let sum = 0;
+      for (let i in this.displayed) {
+        let item = this.displayed[i];
+        sum += parseFloat(item.price || 0);
+      }
+      return sum;
+    }
   },
   methods: {
     createItem() {
@@ -150,6 +181,23 @@ export default {
           this.items.splice(this.editIndex, 1);
           break;
       }
+    },
+    deleteDisplay(data) {
+      this.displayed.splice(data.index, 1);
+    },
+    changeDisplay(data) {
+      this.displayed[data.index][data.field.key] = data.value;
+    },
+    addDisplay() {
+      let item = {
+        product: "",
+        price: "",
+        operate: ""
+      };
+      this.displayed.push(item)
+    },
+    exportDisplay() {
+      console.log(JSON.stringify(this.displayed));
     }
   },
   directives: {
@@ -185,5 +233,11 @@ export default {
   top: 0;
   width: 400px;
   font-size: 14px;
+}
+.design-product {
+  position: absolute;
+  width: 400px;
+  right: 15px;
+  top: 0;
 }
 </style>
